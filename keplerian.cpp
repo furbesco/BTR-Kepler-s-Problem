@@ -1,16 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include <iomanip>
-#include <array>
-#include <vector> 
-
-// def the constant for ease
-const double Pi = 3.14159265358979323846;
 
 
 // https://en.wikipedia.org/wiki/Mean_anomaly
-// === def the Kepler's equation ===
+// https://en.wikipedia.org/wiki/True_anomaly
+
+// === Define the constant for ease ===
+const double Pi = 3.14159265358979323846;
+
+// === Define the Kepler's equation ===
 
 double KeplerEq(double M, double e){
     double E = M; //initial setting, just to start
@@ -30,7 +29,7 @@ double KeplerEq(double M, double e){
 
 
 
-// === main piece of the code ===
+// === Main piece of the code ===
 int main() {
 
     // Parameters
@@ -48,16 +47,42 @@ int main() {
     double mu = G*Mtot;
     double n = std::sqrt(mu / (a*a*a));
 
-    // Output file to store the computation
+    // Output file
     std::ofstream file("kepler_output.csv");
 
-    //failsafe for errors
+    // Failsafe 
     if (!file.is_open()) {
         std::cout << "Error opening file.\n";
         return 1;
     }
 
     file << "t, x, y, r, phi\n";
-    
+
+    // Number of time steps for the loop
+    int N = (int)(T / dt);
+
+    for (int i = 0; i<= N; i++) {
+        double t = t0 + i*dt;
+        // Mean anomaly: used where time evolution is better as it evolves linearly
+        double M = M0 + n*(t - t0);
+        // Kepler's equation 
+        double E = KeplerEq(M, e);
+        // Radius
+        double r = a*(1.0 - e*std::cos(E));
+        // True anomaly: used for orbit simulation as it gives the angle
+        double phi = 2.0 * std::atan(
+            std::sqrt((1.0 + e)/(1.0 - e)) * std::tan(E / 2.0));
+        // Positions
+        double x = r * std::cos(phi);
+        double y = r * std::sin(phi);
+
+        file << t << "," << x << "," << y << "," << r << "," << phi << "\n";
+    }
+
+    file.close();
+
+    std::cout << "Simulation completed.";
+
+    return 0;
 }
 
