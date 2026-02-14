@@ -56,7 +56,7 @@ int main() {
         return 1;
     }
 
-    file << "t, x, y, r, phi\n";
+    file << "t,E,M,x,y,r,phi\n";
 
     // Number of time steps for the loop
     int N = (int)(T / dt);
@@ -76,7 +76,7 @@ int main() {
         double x = r * std::cos(phi);
         double y = r * std::sin(phi);
 
-        file << t << "," << x << "," << y << "," << r << "," << phi << "\n";
+        file << t << "," << E << "," << M << "," << x << "," << y << "," << r << "," << phi << "\n";
     }
 
     file.close();
