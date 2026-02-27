@@ -8,6 +8,9 @@
 
 // === Define the constant for ease ===
 const double Pi = 3.14159265358979323846;
+const double c = 3.0e8; //speed of light, m/s
+const double G_si = 6.7e-11;
+const double M_sun = 2.0e30;
 
 // === Define the Kepler's equation ===
 
@@ -33,19 +36,22 @@ double KeplerEq(double M, double e){
 int main() {
 
     // Parameters
-    double G = 1.0;
-    double m1 = 10.0;
-    double m2 = 20.0;
-    double a = 300.0; // semi-major axis
-    double e = 0.5;   // eccentricity 
+    double m1 = 1.0;
+    double m2 = 1.0e-7;
+    double a = 60e6; // semi-major axis
+    double e = 0.2;   // eccentricity 
     double t0 = 0.0;
     double M0 = 0.0; // at periapsis 
-    double dt = 1.0;
-    double T  = 500000.0; // tells the loop when to stop
+    double dt_si = 100;
+    double L = 1.0e3; //in meters, for natural units, freedom of choice to do so
+    double T_si  = 4.32e6; // tells the loop when to stop
 
-    double Mtot = m1 + m2;
-    double mu = G*Mtot;
+    double T = T_si  * (1 / L) * c;
+    double dt = dt_si * (1 / L) * c;
+    double Mtot = (m1 * M_sun * G_si / (c*c * L))  + (m2 * M_sun * G_si / (c*c * L));
+    double mu = Mtot;
     double n = std::sqrt(mu / (a*a*a));
+    std::cout << "n";
 
     // Output file
     std::ofstream file("kepler_output.csv");
