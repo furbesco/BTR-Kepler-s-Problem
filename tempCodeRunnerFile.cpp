@@ -13,7 +13,7 @@ const double G_si = 6.7e-11;
 const double M_sun = 2.0e30;
 
 
-// === Structure the parameters so that they are stored together for ease of code later on, from chatgpt ===
+// === Structure the parameters so that they are stored together for ease of code later on ===
 struct elems1PN {
     double ar;     // radial semi-major axis
     double er;     // radial eccentricity
@@ -81,13 +81,12 @@ int main() {
     double M0 = 0.0; // at periapsis 
     double dt_si = 500;
     double L = 1.0e3; //in meters, for natural units, freedom of choice to do so
-    double T_si  = 4.32e9; // tells the loop when to stop
+    double T_si  = 4.32e10; // tells the loop when to stop
     double phi0 = 0.0;
-    double k = 0.1; // for orbital procession, to have the "swirly" shape
+    double k = 0.05; // for orbital procession, to have the "swirly" shape
 
-    //double T = T_si  * (1.0 / L) * c;
-    //double dt = dt_si * (1.0 / L) * c;
-
+    double T = T_si  * (1.0 / L) * c;
+    double dt = dt_si * (1.0 / L) * c;
     double Mtot = (m1 * M_sun * G_si / (c*c * L))  + (m2 * M_sun * G_si / (c*c * L));
     double mu = Mtot;
     double n_newton = std::sqrt(mu / (a*a*a));
@@ -99,16 +98,11 @@ int main() {
     elems.ar   = a;
     elems.er   = e;
     elems.et   = 0.2;
-    elems.ephi = 0.3;
+    elems.ephi = 0.9;
     elems.Phi  = 2.0 * Pi * (1.0 + k);
     elems.n    = n_newton;
     elems.t0   = t0;
     elems.phi0 = phi0;
-
-    double P = 2.0 * Pi / elems.n; //one orbit
-    int Norbits = 6;
-    double T = Norbits * P;
-    double dt = P / 1000.0;
 
     // Output file
     std::ofstream file("kepler_output.csv");
