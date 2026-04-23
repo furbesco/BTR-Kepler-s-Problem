@@ -65,12 +65,10 @@ double onePNeq(double l, double et) {
 // changed to atan2 to get full roratition, otherwise stuck bw pi/2 
 // https://stackoverflow.com/questions/283406/what-is-the-difference-between-atan-and-atan2-in-c
 double TA1PN(double u, double ephi) {
-    double v= 2.0 * std::atan2(
+    return 2.0 * std::atan2(
         std::sqrt(1.0 + ephi) * std::sin(u / 2.0), 
         std::sqrt(1.0 - ephi) * std::cos(u / 2.0)
     );
-    if (v < 0.0) v += 2.0 * Pi;
-    return v;
 }
 
 
@@ -111,7 +109,7 @@ int main() {
     elems.phi0 = phi0;
 
     double P = 2.0 * Pi / elems.n; //one orbit
-    int Norbits = 3;
+    int Norbits = 6;
     double T = Norbits * P;
     double dt = P / 1000.0;
 
