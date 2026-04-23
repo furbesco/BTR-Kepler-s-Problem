@@ -62,10 +62,15 @@ double onePNeq(double l, double et) {
     return u;
 }
 
+// changed to atan2 to get full roratition, otherwise stuck bw pi/2 
+// https://stackoverflow.com/questions/283406/what-is-the-difference-between-atan-and-atan2-in-c
 double TA1PN(double u, double ephi) {
-    return 2.0*std::atan(
-        std::sqrt((1.0+ephi)/(1.0-ephi)) * std::tan(u/2.0)
+    double v= 2.0 * std::atan2(
+        std::sqrt(1.0 + ephi) * std::sin(u / 2.0), 
+        std::sqrt(1.0 - ephi) * std::cos(u / 2.0)
     );
+    if (v < 0.0) v += 2.0 * Pi;
+    return v;
 }
 
 
@@ -76,14 +81,14 @@ int main() {
     double m1 = 1.0;
     double m2 = 1.0e-7;
     double a = 60e6; // semi-major axis
-    double e = 0.6;   // eccentricity 
+    double e = 0.4;   // eccentricity 
     double t0 = 0.0;
     double M0 = 0.0; // at periapsis 
     double dt_si = 500;
     double L = 1.0e3; //in meters, for natural units, freedom of choice to do so
     double T_si  = 4.32e9; // tells the loop when to stop
     double phi0 = 0.0;
-    double k = 0.1; // for orbital procession, to have the "swirly" shape
+    double k = 0.05; // for orbital procession, to have the "swirly" shape
 
     //double T = T_si  * (1.0 / L) * c;
     //double dt = dt_si * (1.0 / L) * c;
@@ -96,19 +101,19 @@ int main() {
     // Initial guess by setting the 1PN values close to the Keplerian
 
     elems1PN elems;
-    elems.ar = a;
-    elems.er = e;
-    elems.et = 0.2;
-    elems.ephi = 0.3;
-    elems.Phi = 2.0 * Pi * (1.0 + k);
-    elems.n = n_newton;
-    elems.t0 = t0;
+    elems.ar   = a;
+    elems.er   = e;
+    elems.et   = 0.8;
+    elems.ephi = 0.6;
+    elems.Phi  = 2.0 * Pi * (1.0 + k);
+    elems.n    = n_newton;
+    elems.t0   = t0;
     elems.phi0 = phi0;
 
-    double P = 2.0 * Pi/elems.n; //one orbit
-    int Norbits = 6;
+    double P = 2.0 * Pi / elems.n; //one orbit
+    int Norbits = 3;
     double T = Norbits * P;
-    double dt = P/1000.0;
+    double dt = P / 1000.0;
 
     // Output file
     std::ofstream file("1PN_output.csv");
@@ -122,20 +127,25 @@ int main() {
     file << "t,l,u,R,v,phi,x,y\n";
 
    // Number of time steps for the loop
-    int N = (int)(T/dt);
+    int N = (int)(T / dt);
 
     for (int i = 0; i<= N; i++) {
-        double t = elems.t0 + i*dt;
+        double t = elems.t0 + i * dt;
         // Mean anomaly: used where time evolution is better as it evolves linearly
         double l = elems.n * (t-elems.t0);
+        // completed periods (to oveercome thwe orbit crash)
+        int Nrad = static_cast<int>(std::floor(l/(2.0 * Pi)));
+        // reduced l, suggested by chatgpt to overcome orbital folding at discontinuities in u
+        double l_red = std::fmod(l, 2.0 * Pi);
+        if (l_red < 0.0) l_red += 2.0 * Pi;
         // 1PN equation 
-        double u = onePNeq(l, elems.et);
+        double u = onePNeq(l_red, elems.et);
         // Radius
         double R = elems.ar*(1.0 - elems.er*std::cos(u));
         // True anomaly: used for orbit simulation as it gives the angle
         double v = TA1PN(u, elems.ephi);
         //Ortbital movement shift
-        double phi = elems.phi0 + v*(elems.Phi/(2.0*Pi));
+        double phi = elems.phi0 + Nrad * elems.Phi + v * (elems.Phi/(2.0*Pi));
         // Positions
         double x = R * std::cos(phi);
         double y = R * std::sin(phi);
