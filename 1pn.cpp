@@ -63,8 +63,8 @@ double onePNeq(double l, double et) {
 }
 
 double TA1PN(double u, double ephi) {
-    return 2.0 * std::atan(
-        std::sqrt((1.0 + ephi) / (1.0 - ephi)) * std::tan(u / 2.0)
+    return 2.0*std::atan(
+        std::sqrt((1.0+ephi)/(1.0-ephi)) * std::tan(u/2.0)
     );
 }
 
@@ -96,19 +96,19 @@ int main() {
     // Initial guess by setting the 1PN values close to the Keplerian
 
     elems1PN elems;
-    elems.ar   = a;
-    elems.er   = e;
-    elems.et   = 0.2;
+    elems.ar = a;
+    elems.er = e;
+    elems.et = 0.2;
     elems.ephi = 0.3;
-    elems.Phi  = 2.0 * Pi * (1.0 + k);
-    elems.n    = n_newton;
-    elems.t0   = t0;
+    elems.Phi = 2.0 * Pi * (1.0 + k);
+    elems.n = n_newton;
+    elems.t0 = t0;
     elems.phi0 = phi0;
 
-    double P = 2.0 * Pi / elems.n; //one orbit
+    double P = 2.0 * Pi/elems.n; //one orbit
     int Norbits = 6;
     double T = Norbits * P;
-    double dt = P / 1000.0;
+    double dt = P/1000.0;
 
     // Output file
     std::ofstream file("1PN_output.csv");
@@ -122,10 +122,10 @@ int main() {
     file << "t,l,u,R,v,phi,x,y\n";
 
    // Number of time steps for the loop
-    int N = (int)(T / dt);
+    int N = (int)(T/dt);
 
     for (int i = 0; i<= N; i++) {
-        double t = elems.t0 + i * dt;
+        double t = elems.t0 + i*dt;
         // Mean anomaly: used where time evolution is better as it evolves linearly
         double l = elems.n * (t-elems.t0);
         // 1PN equation 
