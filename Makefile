@@ -6,8 +6,9 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -O2
 TARGET = orbit
 
 # Source files
-SRC = keplerian.cpp
-# SRC = quasi-kepler_1pn.cpp
+#SRC = keplerian.cpp
+SRC = quasi-kepler_1PN.cpp
+#SRC = quasi-kepler_2PN.cpp
 
 # Build rules
 all: $(TARGET)

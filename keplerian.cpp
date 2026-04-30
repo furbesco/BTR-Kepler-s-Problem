@@ -61,12 +61,16 @@ int main() {
     double L = 1.0e3; //in meters, for natural units, freedom of choice to do so
     double T_si  = 4.32e6; // tells the loop when to stop
 
-    double T = T_si  * (1 / L) * c;
-    double dt = dt_si * (1 / L) * c;
+
+    double P = 2.0 * Pi / elems.n; //one orbit
+    int Norbits = 6;
+    double T = Norbits * P;
+    double dt = P / 1000.0;
+    \
     double Mtot = (m1 * M_sun * G_si / (c*c * L))  + (m2 * M_sun * G_si / (c*c * L));
     double mu = Mtot;
     double n = std::sqrt(mu / (a*a*a));
-    std::cout << "n";
+    std::cout << "n = " << n_newton << "\n";
 
     // Output file
     std::ofstream file("kepler_output.csv");
