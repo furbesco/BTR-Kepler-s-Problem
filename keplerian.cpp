@@ -113,8 +113,8 @@ int main() {
 
     double m1 = cfg.m1;
     double m2 = cfg.m2;
-    double a  = cfg.a;
-    double e  = cfg.e;
+    double a = cfg.a / cfg.L;;
+    double e = cfg.e;
 
     if (a <= 0 || e < 0 || e >= 1) {
         std::cout << "Invalid parameters\n";
@@ -122,15 +122,18 @@ int main() {
     }
 
     // orbital frequency
-    double Mtot = (m1 * M_sun * G_si / (c*c * cfg.L))+ (m2 * M_sun * G_si / (c*c * cfg.L));
-
+    double Mtot = (m1*M_sun*G_si / (c*c*cfg.L))+ (m2*M_sun*G_si / (c*c*cfg.L));
     double mu = Mtot;
-    double n= std::sqrt(mu / (a*a*a));
+    double n = std::sqrt(mu / (a*a*a));
 
     double P = 2.0 * Pi / n;
     double T = cfg.Norbits * P;
-
-    double dt = (cfg.dt > 0.0) ? cfg.dt : P / 1000.0;
+    double dt;
+    if (cfg.dt > 0.0) {
+        dt = cfg.dt;
+    } else {
+        dt = P / 1000.0;
+    } // here time is dimentionless
 
     std::cout << "n = " << n << "\n";
 
@@ -152,20 +155,18 @@ int main() {
     file << "# phi0=" << cfg.phi0 << "\n";
     file << "# dt="<< dt << "\n";
     file << "# Norbits=" << cfg.Norbits << "\n";
-
     file << "# L=" << cfg.L << "\n";
-
     file << "# ================================================\n\n";
-
-    file << "t,E,M,x,y,r,phi\n";
+    file << "t,E,M,x,y,r,v,phi\n";
 
     // Number of time steps for the loop
     int N = (int)(T / dt);
 
     for (int i = 0; i<= N; i++) {
-        double t = cfg.t0 + i*dt;
+        double t_dimentionless = cfg.t0 + i*dt;
+        double t = t_dimentionless * cfg.L / c; //conversion to seconds
         // Mean anomaly: used where time evolution is better as it evolves linearly
-        double M = n*(t - cfg.t0);
+        double M = n*(t_dimentionless - cfg.t0);
         int Nrad = (int)(M / (2.0 * Pi));
         double M_red = std::fmod(M, 2.0 * Pi);
         if (M_red < 0.0) M_red += 2.0 * Pi;
@@ -174,19 +175,19 @@ int main() {
         // Radius
         double r = a*(1.0 - e*std::cos(E));
         // True anomaly: used for orbit simulation as it gives the angle
-        double phi_r = 2.0 * std::atan2(
+        double v = 2.0 * std::atan2(
             std::sqrt(1.0 + e) * std::sin(E / 2.0),
             std::sqrt(1.0 - e) * std::cos(E / 2.0)
         );
-        if (phi_r < 0.0) {
-            phi_r += 2.0 * Pi;
+        if (v < 0.0) {
+            v += 2.0 * Pi;
         }
-        double phi = phi_r + 2.0 * Pi * Nrad;
+        double phi = v + 2.0 * Pi * Nrad;
         // Positions
-        double x = r * std::cos(phi_r);
-        double y = r * std::sin(phi_r);
+        double x = r * std::cos(v) * cfg.L;
+        double y = r * std::sin(v) * cfg.L;
 
-        file << t << "," << E << "," << M << "," << x << "," << y << "," << r << "," << phi << "\n";
+        file << t << "," << E << "," << M << "," << x << "," << y << "," << r << "," << v << "," << phi << "\n";
     }
 
     file.close();
