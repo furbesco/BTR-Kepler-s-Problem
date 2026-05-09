@@ -248,7 +248,8 @@ int main() {
     file << "t,l,u,R,v,phi,x,y,"
          << "Ixx,Ixy,Iyy,"
          << "Id_xx,Id_xy,Id_yy,"
-         << "Idd_xx,Idd_xy,Idd_yy\n";
+         << "Idd_xx,Idd_xy,Idd_yy,"
+         << "vx,vy\n";
 
    // Number of time steps for the loop
     int N = (int)(T / dt);
@@ -338,7 +339,8 @@ int main() {
              << v << "," << phi << "," << x << "," << y << "," 
              << I.xx << "," << I.xy << "," << I.yy << ","
              << Id.xx << "," << Id.xy << "," << Id.yy << ","
-             << Idd.xx << "," << Idd.xy << "," << Idd.yy << "\n";
+             << Idd.xx << "," << Idd.xy << "," << Idd.yy
+             << "," << vx << "," << vy << "\n";
     }
 
     file.close();
