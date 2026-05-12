@@ -240,11 +240,12 @@ int main() {
     } else {
         dt = P / 1000.0;
     }
+    
     double total_orbits = T / P;
     double time_per_orbit = T_seconds / total_orbits;
     std::cout << "Total simulated orbits = "<< total_orbits << "\n";
     std::cout << "n = " << n_newton << "\n";
-    std::cout << "Time per orbit = " << time_per_orbit << "\n";
+    std::cout << "Time per orbit is = " << time_per_orbit << "\n";
     
     // Output file
     std::ofstream file("1PN_output.csv");
