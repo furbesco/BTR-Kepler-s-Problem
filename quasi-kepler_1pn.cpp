@@ -196,18 +196,20 @@ int main() {
     std::cout << "ephi = " << cfg.ephi << "\n";
     std::cout << "dt = " << cfg.dt << "\n";
 
-    double m1 = cfg.m1;
-    double m2 = cfg.m2;
-
     // For the unit conversion
-    double m1_si = m1 * M_sun;
-    double m2_si = m2 * M_sun;
+    double a = cfg.a;
+    double e = cfg.e;
+
+    double m1_input = cfg.m1;
+    double m2_input = cfg.m2;
+    double m1_si = m1_input * M_sun;
+    double m2_si = m2_input * M_sun;
     double Mtot_si = m1_si + m2_si;
     double L = G_si * Mtot_si / (c*c);
 
-    double a = cfg.a;
-    double e = cfg.e;
-    double Mtot = (m1*M_sun*G_si / (c*c*L))+ (m2*M_sun*G_si / (c*c*L));
+    // geometric mass fractions
+    double m1 = m1_input / (m1_input + m2_input);
+    double m2 = m2_input / (m1_input + m2_input);
     double mu = 1.0;
 
     // Chirp masses 
