@@ -90,7 +90,6 @@ struct Config {
     double dt;
     int Norbits;
     int PN_order;
-    double L;
     double k;
     double d;
 };
@@ -130,7 +129,6 @@ Config load_config(const std::string& filename) {
     cfg.dt = values["dt"];
     cfg.Norbits = (int)values["Norbits"];
     cfg.PN_order = (int)values["PN_order"];
-    cfg.L = values["L"];
     cfg.k = values["k"];
     cfg.d = values["d"];
 
@@ -196,19 +194,23 @@ int main() {
     std::cout << "er = " << cfg.er << "\n";
     std::cout << "et = " << cfg.et << "\n";
     std::cout << "ephi = " << cfg.ephi << "\n";
-    std::cout << "L = " << cfg.L << "\n";
     std::cout << "dt = " << cfg.dt << "\n";
 
     double m1 = cfg.m1;
     double m2 = cfg.m2;
-    double a = cfg.a / cfg.L;;
-    double e = cfg.e;
-    double Mtot = (m1*M_sun*G_si / (c*c*cfg.L))+ (m2*M_sun*G_si / (c*c*cfg.L));
-    double mu = Mtot;
 
-    // Chirp masses 
+    // For the unit conversion
     double m1_si = m1 * M_sun;
     double m2_si = m2 * M_sun;
+    double Mtot_si = m1_si + m2_si;
+    double L = G_si * Mtot_si / (c*c);
+
+    double a = cfg.a;
+    double e = cfg.e;
+    double Mtot = (m1*M_sun*G_si / (c*c*L))+ (m2*M_sun*G_si / (c*c*L));
+    double mu = 1.0;
+
+    // Chirp masses 
     double Mc = std::pow(m1_si * m2_si, 3.0/5.0) / std::pow(m1_si + m2_si, 1.0/5.0);
     double distance = cfg.d;
 
@@ -231,9 +233,9 @@ int main() {
     // simulation in time or orbits
     double P = 2.0 * Pi / elems.n;
     //double T = cfg.Norbits * P;
-    double T_seconds = 1.0 * 365.25 * 24.0 * 3600.0 / (1000000*96);
+    double T_seconds = 100.0 * 365.25 * 24.0 * 3600.0/1000;
     //double T_seconds = 10.0;
-    double T = T_seconds * c / cfg.L;
+    double T = T_seconds * c / L;
     double dt;
     if (cfg.dt > 0.0) {
         dt = cfg.dt;
@@ -242,10 +244,11 @@ int main() {
     }
     
     double total_orbits = T / P;
-    double time_per_orbit = T_seconds / total_orbits;
+    double P_seconds = P * L / c; // seconds
+ 
     std::cout << "Total simulated orbits = "<< total_orbits << "\n";
     std::cout << "n = " << n_newton << "\n";
-    std::cout << "Time per orbit is = " << time_per_orbit << "\n";
+    std::cout << "Time per orbit is = " << P_seconds << "\n";
     
     // Output file
     std::ofstream file("1PN_output.csv");
@@ -271,7 +274,7 @@ int main() {
     file << "# dt=" <<dt << "\n";
     file << "# Norbits=" << cfg.Norbits << "\n";
     file << "# PN_order=" << cfg.PN_order << "\n";
-    file << "# L=" << cfg.L << "\n";
+    file << "# L=" << L << "\n";
     file << "# k=" << k_real << "\n";
     file << "# =======================================================\n\n";
 
@@ -287,7 +290,7 @@ int main() {
 
     for (int i = 0; i<= N; i++) {
         double t_dimentionless = cfg.t0 + i*dt;
-        double t = t_dimentionless * cfg.L / c; //conversion to seconds
+        double t = t_dimentionless * L / c; //conversion to seconds
         // Mean anomaly: used where time evolution is better as it evolves linearly
         double l = elems.n * (t_dimentionless-elems.t0);
         // completed periods (to oveercome thwe orbit crash)
@@ -305,8 +308,8 @@ int main() {
         //Ortbital movement shift
         double phi = elems.phi0 + Nrad * elems.Phi + v * (elems.Phi/(2.0*Pi));
         // Positions
-        double x = R * std::cos(phi)*cfg.L;
-        double y = R * std::sin(phi)*cfg.L;
+        double x = R * std::cos(phi);
+        double y = R * std::sin(phi);
         // for the second mass moment, the diff in the velocity
         double t_n = t_dimentionless+dt;
         double l_n = elems.n * (t_n - elems.t0);
@@ -347,7 +350,7 @@ int main() {
         double ay = (y_nn - 2.0*y_n + y) / (dt*dt);
 
         // two body state
-        double Mtot_phys = m1 + m2;
+        double Mtot_phys = 1.0;
 
         State state;
 
@@ -366,7 +369,7 @@ int main() {
         SymTensor2d Idd = second_mass_moment_ddot(state, m1, m2);
 
         // GW strain calculation
-        double r_phys = R * cfg.L;
+        double r_phys = R * L;
         double f_gw = GWFrequency(r_phys, m1_si, m2_si);
         double h = GWStrain(Mc, f_gw, distance);
 
