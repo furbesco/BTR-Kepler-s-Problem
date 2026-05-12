@@ -27,6 +27,7 @@ struct elems1PN {
     double Phi;    // azimuthal angle over one radial period
     double t0;
     double phi0;
+    double d;
 };
 
 
@@ -91,6 +92,7 @@ struct Config {
     int PN_order;
     double L;
     double k;
+    double d;
 };
 
 // === Parameter configuration ===
@@ -130,6 +132,7 @@ Config load_config(const std::string& filename) {
     cfg.PN_order = (int)values["PN_order"];
     cfg.L = values["L"];
     cfg.k = values["k"];
+    cfg.d = values["d"];
 
     return cfg;
 }
@@ -168,6 +171,18 @@ SymTensor2d second_mass_moment_ddot(const State& state, double m1, double m2) {
     };
 }
 
+// Strain calculation
+
+double GWFrequency(double r_phys, double m1_si,  double m2_si) {
+    double f_orb = (1.0 / (2.0 * Pi)) * std::sqrt( G_si * (m1_si + m2_si) / (r_phys * r_phys * r_phys) );
+    return 2.0 * f_orb;
+}
+
+double GWStrain(double Mc, double f_gw, double distance) {
+    return
+        (8.0 * std::pow(Pi, 2.0/3.0) / std::sqrt(10.0)) * (std::pow(G_si, 5.0/3.0) *
+	   std::pow(Mc, 5.0/3.0)) /(std::pow(c, 4.0) * distance) * std::pow(f_gw, 2.0/3.0);
+}
 
 
 // === Main piece of the code ===
@@ -190,6 +205,13 @@ int main() {
     double e = cfg.e;
     double Mtot = (m1*M_sun*G_si / (c*c*cfg.L))+ (m2*M_sun*G_si / (c*c*cfg.L));
     double mu = Mtot;
+
+    // Chirp masses 
+    double m1_si = m1 * M_sun;
+    double m2_si = m2 * M_sun;
+    double Mc = std::pow(m1_si * m2_si, 3.0/5.0) / std::pow(m1_si + m2_si, 1.0/5.0);
+    double distance = cfg.d;
+
     double n_newton = std::sqrt(mu / (a*a*a));
     double epsilon = mu/a;
 
@@ -199,23 +221,30 @@ int main() {
     elems.et = cfg.et;
     elems.ephi = cfg.ephi;
     double k_real = 3.0 * epsilon / (1.0 -e*e);
-    double k_ex = k_real * 2000000.0;
+    double k_ex = k_real; //* 2000000.0;
     //elems.Phi = 2.0 * Pi * (1.0 + cfg.k);
     elems.Phi = 2.0 * Pi * (1.0 + k_ex);
     elems.n = n_newton;
     elems.t0 = cfg.t0;
     elems.phi0 = cfg.phi0;
 
+    // simulation in time or orbits
     double P = 2.0 * Pi / elems.n;
-    double T = cfg.Norbits * P;
+    //double T = cfg.Norbits * P;
+    double T_seconds = 1.0 * 365.25 * 24.0 * 3600.0 / (1000000*96);
+    //double T_seconds = 10.0;
+    double T = T_seconds * c / cfg.L;
     double dt;
     if (cfg.dt > 0.0) {
         dt = cfg.dt;
     } else {
         dt = P / 1000.0;
     }
-
+    double total_orbits = T / P;
+    double time_per_orbit = T_seconds / total_orbits;
+    std::cout << "Total simulated orbits = "<< total_orbits << "\n";
     std::cout << "n = " << n_newton << "\n";
+    std::cout << "Time per orbit = " << time_per_orbit << "\n";
     
     // Output file
     std::ofstream file("1PN_output.csv");
@@ -249,7 +278,8 @@ int main() {
          << "Ixx,Ixy,Iyy,"
          << "Id_xx,Id_xy,Id_yy,"
          << "Idd_xx,Idd_xy,Idd_yy,"
-         << "vx,vy\n";
+         << "vx,vy,"
+         << "f_gw,h\n";
 
    // Number of time steps for the loop
     int N = (int)(T / dt);
@@ -334,13 +364,19 @@ int main() {
         SymTensor2d Id = second_mass_moment_dot(state, m1, m2);
         SymTensor2d Idd = second_mass_moment_ddot(state, m1, m2);
 
+        // GW strain calculation
+        double r_phys = R * cfg.L;
+        double f_gw = GWFrequency(r_phys, m1_si, m2_si);
+        double h = GWStrain(Mc, f_gw, distance);
+
 
         file << t << "," << l << "," << u << "," << R << ","
              << v << "," << phi << "," << x << "," << y << "," 
              << I.xx << "," << I.xy << "," << I.yy << ","
              << Id.xx << "," << Id.xy << "," << Id.yy << ","
              << Idd.xx << "," << Idd.xy << "," << Idd.yy
-             << "," << vx << "," << vy << "\n";
+             << "," << vx << "," << vy  
+             << "," << f_gw << "," << h << "\n";
     }
 
     file.close();
