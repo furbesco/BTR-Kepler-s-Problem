@@ -66,10 +66,33 @@ double onePNeq(double l, double et) {
 // changed to atan2 to get full roratition, otherwise stuck bw pi/2 
 // https://stackoverflow.com/questions/283406/what-is-the-difference-between-atan-and-atan2-in-c
 double TA1PN(double u, double ephi) {
+
+    if (ephi >= 1.0) {
+        std::cerr << "Error: ephi >= 1\n";
+        exit(1);
+    }
+
     return 2.0 * std::atan2(
         std::sqrt(1.0 + ephi) * std::sin(u / 2.0), 
         std::sqrt(1.0 - ephi) * std::cos(u / 2.0)
     );
+}
+
+void reduce_angle(double l, int& Nrad, double& l_red) {
+    const double twopi = 2.0 * Pi;
+    const double eps = 1e-12;
+    Nrad = static_cast<int>(std::floor((l + eps) / twopi));
+    l_red = l - Nrad * twopi;
+
+    if (l_red < 0.0) {
+        l_red += twopi;
+        Nrad -= 1;
+    }
+
+    if (l_red >= twopi) {
+        l_red -= twopi;
+        Nrad += 1;
+    }
 }
 
 struct Vec2 {
@@ -89,8 +112,9 @@ struct Config {
     double t0, phi0;
     double dt;
     int Norbits;
+    double T_years;
+    double T_months;
     int PN_order;
-    double k;
     double d;
 };
 
@@ -128,8 +152,9 @@ Config load_config(const std::string& filename) {
     cfg.phi0 = values["phi0"];
     cfg.dt = values["dt"];
     cfg.Norbits = (int)values["Norbits"];
+    cfg.T_years = values["T_years"];
+    cfg.T_months = values["T_months"];
     cfg.PN_order = (int)values["PN_order"];
-    cfg.k = values["k"];
     cfg.d = values["d"];
 
     return cfg;
@@ -232,17 +257,52 @@ int main() {
     elems.t0 = cfg.t0;
     elems.phi0 = cfg.phi0;
 
-    // simulation in time or orbits
+    // Simulation in time or orbits
     double P = 2.0 * Pi / elems.n;
-    //double T = cfg.Norbits * P;
-    double T_seconds = 100.0 * 365.25 * 24.0 * 3600.0/1000;
-    //double T_seconds = 10.0;
-    double T = T_seconds * c / L;
+    double T;
     double dt;
-    if (cfg.dt > 0.0) {
-        dt = cfg.dt;
-    } else {
-        dt = P / 1000.0;
+
+    // Fixed number of orbits
+    if (cfg.Norbits > 0) {
+        T = cfg.Norbits * P;
+        std::cout << "Simulation mode: orbits\n";
+        if (cfg.dt > 0.0) {
+            dt = cfg.dt;
+        } else {
+            dt = P / 1000.0;
+        }
+    }
+
+    // Fixed number of years
+    else if (cfg.T_years > 0.0) {
+        double T_seconds =
+            cfg.T_years * 365.25 * 24.0 * 3600.0;
+        T = T_seconds * c / L;
+        std::cout << "Simulation mode: years\n";
+        if (cfg.dt > 0.0) {
+            dt = cfg.dt;
+        } else {
+            dt = P / 100.0;
+        }
+    }
+
+    // Simulation in months
+    else if (cfg.T_months > 0.0) {
+        double T_seconds =
+            cfg.T_months * 30.44 * 24.0 * 3600.0;
+        T = T_seconds * c / L;
+        std::cout << "Simulation mode: months\n";
+        if (cfg.dt > 0.0) {
+            dt = cfg.dt;
+        } else {
+            dt = P / 100.0;
+        }
+    }
+
+    else {
+        std::cerr
+            << "Error: specify either Norbits, T_years, or T_months\n";
+        exit(1);
     }
     
     double total_orbits = T / P;
@@ -274,10 +334,11 @@ int main() {
     file << "# t0=" << cfg.t0 << "\n";
     file << "# phi0=" << cfg.phi0 << "\n";
     file << "# dt=" <<dt << "\n";
-    file << "# Norbits=" << cfg.Norbits << "\n";
     file << "# PN_order=" << cfg.PN_order << "\n";
     file << "# L=" << L << "\n";
     file << "# k=" << k_real << "\n";
+    file << "# Norbits=" << total_orbits << "\n";
+    file << "# T=" << T << "\n";
     file << "# =======================================================\n\n";
 
     file << "t,l,u,R,v,phi,x,y,"
@@ -296,10 +357,10 @@ int main() {
         // Mean anomaly: used where time evolution is better as it evolves linearly
         double l = elems.n * (t_dimentionless-elems.t0);
         // completed periods (to oveercome thwe orbit crash)
-        int Nrad = static_cast<int>(std::floor(l/(2.0 * Pi)));
+        int Nrad;
         // reduced l, suggested by chatgpt to overcome orbital folding at discontinuities in u
-        double l_red = std::fmod(l, 2.0 * Pi);
-        if (l_red < 0.0) l_red += 2.0 * Pi;
+        double l_red;
+        reduce_angle(l, Nrad, l_red);
         // 1PN equation 
         double u = onePNeq(l_red, elems.et);
         // Radius
@@ -321,7 +382,7 @@ int main() {
         double u_n = onePNeq(l_red_n, elems.et);
         double R_n = elems.ar*(1.0 - elems.er*std::cos(u_n));
         double v_n = TA1PN(u_n, elems.ephi);
-        if (v_n < 0.0) v_n += 2.0 * Pi;
+        //if (v_n < 0.0) v_n += 2.0 * Pi;
         int Nrad_n = static_cast<int>(std::floor(l_n/(2.0 * Pi)));
         double phi_n = elems.phi0 + Nrad_n * elems.Phi + v_n * (elems.Phi/(2.0*Pi));
 
@@ -376,7 +437,7 @@ int main() {
         double h = GWStrain(Mc, f_gw, distance);
 
 
-        file << t << "," << l << "," << u << "," << R << ","
+        file << t_dimentionless << "," << l << "," << u << "," << R << ","
              << v << "," << phi << "," << x << "," << y << "," 
              << I.xx << "," << I.xy << "," << I.yy << ","
              << Id.xx << "," << Id.xy << "," << Id.yy << ","
