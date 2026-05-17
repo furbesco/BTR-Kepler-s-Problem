@@ -12,4 +12,4 @@ In this code, the semi-major axis and eccentricity are constants. Therefore, the
 6. Radius
 7. True anomaly 
 
-As a next step, the 1PN approximation was implemented analytically in code and used to simulate the orbital evolution with precession to it. There, the precession comes from angle \Phi being shifted by $2\pi + k$ each orbital revolution. 
+As a next step, the 1PN approximation was implemented analytically in code and used to simulate the orbital evolution with precession to it. There, the precession comes from angle $\Phi$ being shifted by $2\pi + k$ each orbital revolution. 
