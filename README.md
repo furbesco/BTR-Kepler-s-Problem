@@ -24,4 +24,4 @@ To run the files in the correct order, it is recommended to first run the Kepler
 
 ### 2PN Approximation
 
-The 2PN approximation is currently under making. As of now, it still does not fucntion fully properly, therefore the file is still undergoing changes to it. 
+The 2PN approximation is currently under making. As of now, it still does not function fully properly, therefore the file is still undergoing changes to it. 
